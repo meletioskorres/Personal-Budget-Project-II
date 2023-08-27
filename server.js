@@ -17,13 +17,17 @@ app.get('/envelopes', (req,res,next) => {
 })
 
 app.get('/envelopes/:id', (req,res,next) =>{
-    const id = req.params.id
+    const id = parseInt(req.params.id);
 
-    if(id < envelopes.length) {
-        const result = envelopes.filter((word) => word.id === parseInt(id))
-        res.status(200).send(result)
+    if (!isNaN(id) && id >= 0) {
+        const result = envelopes.filter((envelope) => envelope.id === id);
+        if (result.length > 0) {
+            res.status(200).json(result);
+        } else {
+            res.status(404).json({ message: "Envelope not found" });
+        }
     } else {
-        res.status(400).json({message: "invalid id entered"})
+        res.status(400).json({ message: "Invalid id entered" });
     }
 })
 
@@ -46,27 +50,50 @@ app.post('/envelopes', (req,res,next) => {
     }
 })
 
-app.put('/envelopes', (req,res,next)=>{
+app.put('/envelopes/:id', (req, res, next) => {
+    const id = parseInt(req.params.id);
+    const { title, budget } = req.body;
 
-    const {id,title,budget} = req.body;
+    if (!isNaN(id) && id >= 0) {
+        const indexToUpdate = envelopes.findIndex(envelope => envelope.id === id);
 
-    if (id < envelopes.length && id >= 0) {
-        const updatedEnvelope = envelopes[id]
+        if (indexToUpdate !== -1) {
+            const updatedEnvelope = envelopes[indexToUpdate];
 
-        if (title !== undefined && typeof title === 'string') {
-            updatedEnvelope.title = title;
+            if (title !== undefined && typeof title === 'string') {
+                updatedEnvelope.title = title;
+            }
+
+            if (!isNaN(budget) && isFinite(budget)) {
+                updatedEnvelope.budget = budget;
+            }
+
+            res.status(204).json({ message: "Envelope updated successfully." });
+        } else {
+            res.status(404).json({ message: "Envelope not found." });
         }
-
-        if(!isNaN(budget) && isFinite(budget)) {
-            updatedEnvelope.budget = budget
-        }
-
-        res.status(204).json({ message: "Envelope updated successfully."});
-
     } else {
-        res.status(400).json({message:"Wrong id given"})
+        res.status(400).json({ message: "Wrong id given." });
     }
-})
+});
+
+
+app.delete('/envelopes/:id', (req, res, next) => {
+    const id = parseInt(req.params.id);
+
+    if (!isNaN(id)) {
+        const indexToDelete = envelopes.findIndex(envelope => envelope.id === id);
+
+        if (indexToDelete !== -1) {
+            envelopes.splice(indexToDelete, 1);
+            res.status(200).json({ message: "Envelope deleted successfully." });
+        } else {
+            res.status(404).json({ message: "Envelope not found." });
+        }
+    } else {
+        res.status(400).json({ message: "Invalid id provided." });
+    }
+});
 
 
 app.listen(3000, ()=> {
