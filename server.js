@@ -27,7 +27,6 @@ app.get('/envelopes/:id', (req,res,next) =>{
     }
 })
 
-
 app.post('/envelopes', (req,res,next) => {
     const {title,budget} = req.body;
 
@@ -44,6 +43,28 @@ app.post('/envelopes', (req,res,next) => {
         res.status(201).json({message: "An envelope was added to the server"})
     } else {
         res.status(400).json({message:"Check the validity of the input"})
+    }
+})
+
+app.put('/envelopes', (req,res,next)=>{
+
+    const {id,title,budget} = req.body;
+
+    if (id < envelopes.length && id >= 0) {
+        const updatedEnvelope = envelopes[id]
+
+        if (title !== undefined && typeof title === 'string') {
+            updatedEnvelope.title = title;
+        }
+
+        if(!isNaN(budget) && isFinite(budget)) {
+            updatedEnvelope.budget = budget
+        }
+
+        res.status(204).json({ message: "Envelope updated successfully."});
+
+    } else {
+        res.status(400).json({message:"Wrong id given"})
     }
 })
 
