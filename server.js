@@ -50,6 +50,31 @@ app.post('/envelopes', (req,res,next) => {
     }
 })
 
+app.post('/envelopes/transfer/:from/:to', (req,res,next)=>{
+    const fromIndex = envelopes.findIndex(envelope => 
+         envelope.id === parseInt(req.params.from));
+    
+    const toIndex = envelopes.findIndex(envelope => 
+         envelope.id === parseInt(req.params.to));
+
+    const budget = req.body.budget
+    console.log(fromIndex + ' ' + toIndex)
+    console.log(req.params.from +  " " + req.params.to)
+    if (fromIndex >= 0 && toIndex >= 0) {
+        if (budget>0 && budget<= envelopes[fromIndex].budget) {
+            envelopes[fromIndex].budget -= budget
+            envelopes[toIndex].budget += budget
+
+            res.status(200).json({from:envelopes[fromIndex], to:envelopes[toIndex]})
+        } else {
+            res.status(400).json({message:"Invalid number or insufficient funds on account"})
+        }
+    } else {
+        res.status(400).json({message:"Could not find either from or index"})
+    }
+        
+})
+
 app.put('/envelopes/:id', (req, res, next) => {
     const id = parseInt(req.params.id);
     const { title, budget } = req.body;
