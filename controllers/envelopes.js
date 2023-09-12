@@ -91,4 +91,30 @@ exports.putEvenlope = async (req,res) => {
         res.status(500).json({ error: 'Internal server error' });
     } 
 }
+
+exports.deleteEnvelope = async (req,res) =>{
+    const envelopeId = req.params.id;
+
+    try {
+        const query = "DELETE FROM envelopes WHERE id = $1"
+        
+        const result = await db.query(query, [envelopeId])
+
+        if(result.rowCount === 0) {
+            res.status(404).send({
+                status: "Not Found",
+                message: "Envelope not found",
+            })
+        }
+
+        res.status(204).send();
+    } catch (err) {
+        console.error('Error deleting envelope:', err);
+        res.status(500).send({
+            status: "Error",
+            message: "Internal server error",
+            data: null
+          });
+    }
+}
     
