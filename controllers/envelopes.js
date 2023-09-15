@@ -86,7 +86,7 @@ exports.putEvenlope = async (req,res) => {
             message: "Envelope updated successfully",
             data: updatedEnvelope,
         })
-    } catch (err) {
+    } catch (error) {
         console.error('Error updating envelope:', error);
         res.status(500).json({ error: 'Internal server error' });
     } 
@@ -108,8 +108,8 @@ exports.deleteEnvelope = async (req,res) =>{
         }
 
         res.status(204).send();
-    } catch (err) {
-        console.error('Error deleting envelope:', err);
+    } catch (error) {
+        console.error('Error deleting envelope:', error);
         res.status(500).send({
             status: "Error",
             message: "Internal server error",
@@ -117,4 +117,52 @@ exports.deleteEnvelope = async (req,res) =>{
           });
     }
 }
+
+exports.addEnvelopeTransaction = async (req,res) => {
+    const {from_id,to_id,amount} = req.body;
+
+    const date = new Date();
+
+    const fromEnvelopeQuery = "SELECT budget FROM envelopes WHERE id = $1"
+    const toEnvelopeQuery = "SELECT budget FROM envelopes WHERE id = $1"
+    const transferQuery = 
+    `UPDATE envelopes 
+    SET budget = CASE 
+    WHEN id = $1 THEN budget - $2
+    WHEN id = $3 THEN budget + $2
+    END
+    WHERE id IN ($1, $3)`
+    const transactionQuery = "INSERT INTO transactions (date, payment_amount, sender_envelope_id, recipient_envelope_id) VALUES ($1,$2,$3,$4)"
+    try {
+        await db.query("BEGIN")
+
+        const fromEnvelopeResult = await db.query(fromEnvelopeQuery, [from_id])
+        const toEnvelopeResult = await db.query(toEnvelopeQuery,[to_id])
+
+        if(fromEnvelopeResult.rowCount === 0 || toEnvelopeResult.rowCount === 0) {
+            await db.query("ROLLBACK")
+            return res.status(400).send({error: "Source envelope or receiver envelope not found"})
+        }
+
+        const fromBalance = fromEnvelopeResult.rows[0].budget
+        console.log(fromBalance)
+        if(fromBalance < amount || amount <= 0) {
+            await db.query("ROLLBACK")
+            return res.status(400).send({error: "Insufficient funds"})
+        }
+
+        await db.query(transferQuery, [from_id, amount, to_id])
+        
+        await db.query(transactionQuery,[date,amount,from_id, to_id])
+        
+        await db.query("COMMIT")
+
+        res.status(200).send({message: "Money transfered successfully"})
+    } catch(error) {
+        await db.query ("ROLLBACK")
+        console.error("Error", error)
+        res.status(500).send({error:"Transaction failed"})
+    }
+}
+
     
